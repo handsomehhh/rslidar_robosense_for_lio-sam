@@ -22,8 +22,21 @@
 #include <rslidar_pointcloud/CloudNodeConfig.h>
 #include "rawdata.h"
 
+#include <sensor_msgs/PointCloud2.h>
+
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
+
+
+
+
 namespace rslidar_pointcloud
 {
+
+
+
+
 class Convert
 {
 public:

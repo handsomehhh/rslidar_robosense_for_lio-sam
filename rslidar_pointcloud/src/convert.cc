@@ -16,55 +16,7 @@
 #include "convert.h"
 #include <pcl_conversions/pcl_conversions.h>
 
-/**
- * @brief rs_to_velodyne中定义点云格式
- * 
- */
-std::string output_type;
 
-static int RING_ID_MAP_RUBY[] = {
-        3, 66, 33, 96, 11, 74, 41, 104, 19, 82, 49, 112, 27, 90, 57, 120,
-        35, 98, 1, 64, 43, 106, 9, 72, 51, 114, 17, 80, 59, 122, 25, 88,
-        67, 34, 97, 0, 75, 42, 105, 8, 83, 50, 113, 16, 91, 58, 121, 24,
-        99, 2, 65, 32, 107, 10, 73, 40, 115, 18, 81, 48, 123, 26, 89, 56,
-        7, 70, 37, 100, 15, 78, 45, 108, 23, 86, 53, 116, 31, 94, 61, 124,
-        39, 102, 5, 68, 47, 110, 13, 76, 55, 118, 21, 84, 63, 126, 29, 92,
-        71, 38, 101, 4, 79, 46, 109, 12, 87, 54, 117, 20, 95, 62, 125, 28,
-        103, 6, 69, 36, 111, 14, 77, 44, 119, 22, 85, 52, 127, 30, 93, 60
-};
-static int RING_ID_MAP_16[] = {
-        0, 1, 2, 3, 4, 5, 6, 7, 15, 14, 13, 12, 11, 10, 9, 8
-};
-
-// rslidar和velodyne的格式有微小的区别
-// rslidar的点云格式
-struct RsPointXYZIRT {
-    PCL_ADD_POINT4D;
-    uint8_t intensity;
-    uint16_t ring = 0;
-    double timestamp = 0;
-
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-} EIGEN_ALIGN16;
-POINT_CLOUD_REGISTER_POINT_STRUCT(RsPointXYZIRT,
-                                  (float, x, x)(float, y, y)(float, z, z)(uint8_t, intensity, intensity)
-                                          (uint16_t, ring, ring)(double, timestamp, timestamp))
-
-// velodyne的点云格式
-struct VelodynePointXYZIRT {
-    PCL_ADD_POINT4D
-
-    PCL_ADD_INTENSITY;
-    uint16_t ring;
-    float time;
-
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-} EIGEN_ALIGN16;
-
-POINT_CLOUD_REGISTER_POINT_STRUCT (VelodynePointXYZIRT,
-                                   (float, x, x)(float, y, y)(float, z, z)(float, intensity, intensity)
-                                           (uint16_t, ring, ring)(float, time, time)
-)
 
 
 
@@ -103,9 +55,16 @@ void Convert::processScan(const rslidar_msgs::rslidarScan::ConstPtr& scanMsg)
   //分析一下driver如何处理数据的时间戳
   //雷达的时间戳 还包含在1248byte的数据包里
   //这里要修改*** 没有ring和timestamp
-  pcl::PointCloud<pcl::PointXYZI>::Ptr outPoints(new pcl::PointCloud<pcl::PointXYZI>);
+  // pcl::PointCloud<pcl::PointXYZI>::Ptr outPoints(new pcl::PointCloud<pcl::PointXYZI>); //修改成带有ring和timestamp信息的格式
+  pcl::PointCloud<RsPointXYZIRT>::Ptr outPoints(new pcl::PointCloud<RsPointXYZIRT>);
+  pcl::PointCloud<VelodynePointXYZIRT>::Ptr outPoints_velodyne(new pcl::PointCloud<VelodynePointXYZIRT>);
   outPoints->header.stamp = pcl_conversions::toPCL(scanMsg->header).stamp; //这里的时间戳是从ros中获取的系统时间；不是雷达提供的时间戳
   outPoints->header.frame_id = scanMsg->header.frame_id; //"rslidar"
+
+  outPoints_velodyne->header.stamp = pcl_conversions::toPCL(scanMsg->header).stamp; //这里的时间戳是从ros中获取的系统时间；不是雷达提供的时间戳
+  outPoints_velodyne->header.frame_id = "velodyne";//scanMsg->header.frame_id; //"rslidar"
+  
+
   outPoints->clear();
   if (model == "RS16")
   {
@@ -113,6 +72,14 @@ void Convert::processScan(const rslidar_msgs::rslidarScan::ConstPtr& scanMsg)
     outPoints->width = 24 * (int)scanMsg->packets.size();
     outPoints->is_dense = false;
     outPoints->resize(outPoints->height * outPoints->width);
+
+    //velodyne
+    //项目中实际收到的点云数据是height = 1的（无序）
+    //所以这里暂时先设置成无序的
+    outPoints_velodyne->height = 1;
+    outPoints_velodyne->width = 16 * 24 * (int)scanMsg->packets.size();
+    outPoints_velodyne->is_dense = false;
+    outPoints_velodyne->resize(outPoints_velodyne->height * outPoints_velodyne->width);
   }
   else if (model == "RS32")
   {
@@ -128,11 +95,16 @@ void Convert::processScan(const rslidar_msgs::rslidarScan::ConstPtr& scanMsg)
   for (size_t i = 0; i < scanMsg->packets.size(); ++i)
   {
     //解析每个packet
-    data_->unpack(scanMsg->packets[i], outPoints);
+    if(i == 0)
+      data_->unpack(scanMsg->packets[i], outPoints, outPoints_velodyne, true);
+    else 
+      data_->unpack(scanMsg->packets[i], outPoints, outPoints_velodyne, false);
   }
   sensor_msgs::PointCloud2 outMsg;
   pcl::toROSMsg(*outPoints, outMsg);
   //发布
   output_.publish(outMsg);
+
+  // outPoint_pcl是velodyne格式的
 }
 }  // namespace rslidar_pointcloud
