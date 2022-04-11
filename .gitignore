@@ -1,0 +1,5 @@
+#params files 
+# rslidar_pointcloud/data/rs_lidar_16/curves.csv
+# rslidar_pointcloud/data/rs_lidar_16/ChannelNum.csv
+# rslidar_pointcloud/data/rs_lidar_16/angle.csv
+# .vscode
