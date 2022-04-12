@@ -33,6 +33,9 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <stdio.h>
 
+#include <time.h>
+#include <locale.h>
+
 
 /**
  * @brief rs_to_velodyne中定义点云格式
@@ -150,6 +153,23 @@ union two_bytes //用于解压块中的前两个数据字节 （无实际意义
   uint8_t bytes[2];
 };
 
+/**
+ * @brief 自定义用于解析数据包中的时间信息
+ * raw data
+ * 
+ */
+struct raw_time
+{
+  uint8_t year;
+  uint8_t month;
+  uint8_t day;
+  uint8_t hour;
+  uint8_t minute;
+  uint8_t second;
+  uint16_t msecond;
+  uint16_t usecond;
+}
+
 static const int PACKET_SIZE = 1248;
 static const int BLOCKS_PER_PACKET = 12;
 static const int PACKET_STATUS_SIZE = 4;
@@ -237,6 +257,21 @@ float temper = 31.0;
 int tempPacketNum = 0;
 int numOfLasers = 16;
 int TEMPERATURE_RANGE = 40;
+
+/**
+ * @brief 用于时间戳的计算
+ * 根据雷达手册 head的21byte -- 30byte为时间戳
+ * 考虑实际存储的时间戳，由4byte的sec和4byte的nsec组成（一共8byte）
+ * nsec可以对应后4byte，但是前6byte无法直接对应
+ * 所以打算舍弃前两个byte(记录年 月信息)
+ * 理论上会有点小问题（跨月的时候）
+ * 
+ * 这里等明天再问问学长吧
+ * 
+ */
+double get_timestamp(const raw_time raw_time_data) ;
+
+
 
 }  // namespace rslidar_rawdata
 

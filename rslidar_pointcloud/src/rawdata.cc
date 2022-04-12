@@ -525,6 +525,33 @@ int RawData::estimateTemperature(float Temper)
 
   return temp;
 }
+
+/**
+ * @brief convert raw time info to timestamp(double, uint: s)
+ * 
+ * @param raw_time_data 
+ * @return double 
+ */
+double RawData::get_timestamp(const raw_time raw_time_data)
+{
+  //处理sec
+  struct tm cur_time;
+  cur_time.tm_year = raw_time_data.year + 100;
+  cur_time.tm_mon = raw_time_data.month - 1;
+  cur_time.tm_mday = raw_time_data.day;
+  cur_time.tm_hour = raw_time_data.hour;
+  cur_time.tm_min = raw_time_data.minute;
+  cur_time.tm_sec = raw_time_data.second;
+
+  uint32_t sec = mktime(&cur_time);
+
+  //处理nsec
+  uint32_t nsec = raw_time_data.msecond * 1e6 + raw_time_data.usecond;
+
+  //得到double类型时间戳
+  return (static_cast<double>(sec) + 1e-9*static_cast<double>(nsec));
+}
+
 //------------------------------------------------------------
 
 /** @brief convert raw packet to point cloud
@@ -550,7 +577,13 @@ void RawData::unpack(const rslidar_msgs::rslidarPacket& pkt, pcl::PointCloud<RsP
 
   //获取时间戳信息
   //根据雷达手册 head的21byte -- 30byte为时间戳
-  double timestamp = 0; //暂时还没有接口，有了接口直接从接口中获得 暂时用0代替 //要不然还是计算8 根据公式
+
+  const raw_time* raw_time_data = (const raw_time*) &pkt.data[20];
+
+
+  // double timestamp = 0; //暂时还没有接口，有了接口直接从接口中获得 暂时用0代替 //要不然还是计算8 根据公式
+
+  double timestamp = get_timestamp(*raw_time_data);
 
   if(is_first_packet) {
     //更新全局时间戳
@@ -581,17 +614,6 @@ void RawData::unpack(const rslidar_msgs::rslidarPacket& pkt, pcl::PointCloud<RsP
       tempPacketNum = 1;
     }
 
-
-    //block的数据格式
-    /*
-      typedef struct raw_block //一个block 2byte 的标志位，使用 0xffee 表示；2byte 的 Azimuth，表示水平旋转角度信息，每 个角度信息对应着 32 个的 channel data，包含 2 组完整的 16 通道信息。
-      {
-        uint16_t header;  ///< UPPER_BANK or LOWER_BANK
-        uint8_t rotation_1; 
-        uint8_t rotation_2;  /// combine rotation1 and rotation2 together to get 0-35999, divide by 100 to get degrees
-        uint8_t data[BLOCK_DATA_SIZE];  // 96 32 * 2(一个block出去标志位和水平转角信息的数据大小)
-      } raw_block_t;
-    */
     //获取水平转角
     //两个byte拼接一下
     azimuth = (float)(256 * raw->blocks[block].rotation_1 + raw->blocks[block].rotation_2);
