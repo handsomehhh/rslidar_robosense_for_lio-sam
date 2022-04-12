@@ -36,10 +36,10 @@ find_package(Boost REQUIRED COMPONENTS thread)
 find_package(PkgConfig REQUIRED)
 
 
-include_directories(${Boost_INCLUDE_DIR} ${catkin_INCLUDE_DIRS}
-	${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake)
+include_directories(${Boost_INCLUDE_DIR} ${catkin_INCLUDE_DIRS})
+	# ${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake)
 
-generate_dynamic_reconfigure_options(cfg/rslidarNode.cfg)
+#generate_dynamic_reconfigure_options(cfg/rslidarNode.cfg)
 
 catkin_package(
     CATKIN_DEPENDS ${${PROJECT_NAME}_CATKIN_DEPS}

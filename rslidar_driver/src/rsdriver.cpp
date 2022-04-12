@@ -109,10 +109,7 @@ rslidarDriver::rslidarDriver(ros::NodeHandle node, ros::NodeHandle private_nh)
   config_.cut_angle = static_cast<int>(cut_angle * 100);
 
   // Initialize dynamic reconfigure 动态参数
-  srv_ = boost::make_shared<dynamic_reconfigure::Server<rslidar_driver::rslidarNodeConfig> >(private_nh);
-  dynamic_reconfigure::Server<rslidar_driver::rslidarNodeConfig>::CallbackType f;
-  f = boost::bind(&rslidarDriver::callback, this, _1, _2);
-  srv_->setCallback(f);  // Set callback function und call initially
+  config_.time_offset = 0;
 
   // initialize diagnostics 
   diagnostics_.setHardwareID(deviceName);
@@ -253,9 +250,4 @@ void rslidarDriver::difopPoll(void)
   }
 }
 
-void rslidarDriver::callback(rslidar_driver::rslidarNodeConfig& config, uint32_t level)
-{
-  ROS_INFO("Reconfigure Request");
-  config_.time_offset = config.time_offset;
-}
 }

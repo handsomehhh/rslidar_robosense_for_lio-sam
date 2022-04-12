@@ -168,7 +168,7 @@ struct raw_time
   uint8_t second;
   uint16_t msecond;
   uint16_t usecond;
-}
+};
 
 static const int PACKET_SIZE = 1248;
 static const int BLOCKS_PER_PACKET = 12;
@@ -243,6 +243,19 @@ public:
 
   //记录起始时间戳
   double init_timestamp = 0;
+
+  /**
+ * @brief 用于时间戳的计算
+ * 根据雷达手册 head的21byte -- 30byte为时间戳
+ * 考虑实际存储的时间戳，由4byte的sec和4byte的nsec组成（一共8byte）
+ * nsec可以对应后4byte，但是前6byte无法直接对应
+ * 所以打算舍弃前两个byte(记录年 月信息)
+ * 理论上会有点小问题（跨月的时候）
+ * 
+ * 这里等明天再问问学长吧
+ * 
+ */
+double get_timestamp(const raw_time raw_time_data) ;
 };
 
 float VERT_ANGLE[32];
@@ -258,18 +271,7 @@ int tempPacketNum = 0;
 int numOfLasers = 16;
 int TEMPERATURE_RANGE = 40;
 
-/**
- * @brief 用于时间戳的计算
- * 根据雷达手册 head的21byte -- 30byte为时间戳
- * 考虑实际存储的时间戳，由4byte的sec和4byte的nsec组成（一共8byte）
- * nsec可以对应后4byte，但是前6byte无法直接对应
- * 所以打算舍弃前两个byte(记录年 月信息)
- * 理论上会有点小问题（跨月的时候）
- * 
- * 这里等明天再问问学长吧
- * 
- */
-double get_timestamp(const raw_time raw_time_data) ;
+
 
 
 

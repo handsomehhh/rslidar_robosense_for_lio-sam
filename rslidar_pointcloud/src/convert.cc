@@ -33,21 +33,13 @@ Convert::Convert(ros::NodeHandle node, ros::NodeHandle private_nh) : data_(new r
   // advertise output point cloud (before subscribing to input data)
   output_ = node.advertise<sensor_msgs::PointCloud2>("rslidar_points", 10); //发布话题（重点）（应当是处理后的点云格式）
 
-  srv_ = boost::make_shared<dynamic_reconfigure::Server<rslidar_pointcloud::CloudNodeConfig> >(private_nh); //应该就是动态参数配置的
-  dynamic_reconfigure::Server<rslidar_pointcloud::CloudNodeConfig>::CallbackType f;
-  f = boost::bind(&Convert::callback, this, _1, _2);
-  srv_->setCallback(f);
+
 
   // subscribe to rslidarScan packets //订阅之前在driver节点发布的原始数据
   rslidar_scan_ = node.subscribe("rslidar_packets", 10, &Convert::processScan, (Convert*)this, //回调函数 重点
                                  ros::TransportHints().tcpNoDelay(true));
 }
 
-void Convert::callback(rslidar_pointcloud::CloudNodeConfig& config, uint32_t level)
-{
-  ROS_INFO("Reconfigure Request");
-  // config_.time_offset = config.time_offset;
-}
 
 /** @brief Callback for raw scan messages. */
 void Convert::processScan(const rslidar_msgs::rslidarScan::ConstPtr& scanMsg)

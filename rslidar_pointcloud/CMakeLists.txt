@@ -21,8 +21,8 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(Boost COMPONENTS signals)
 find_package(PkgConfig REQUIRED)
 include_directories(${catkin_INCLUDE_DIRS}
-  ${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake
+  # ${dynamic_reconfigure_PACKAGE_PATH}/cmake/cfgbuild.cmake
 )
 
-generate_dynamic_reconfigure_options(cfg/CloudNode.cfg)
+#generate_dynamic_reconfigure_options(cfg/CloudNode.cfg)
 add_subdirectory(src)
